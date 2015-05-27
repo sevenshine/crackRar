@@ -29,10 +29,15 @@ void CmdExtract::DoExtract(CommandData *Cmd)
     	 //FD.Size=88	DataIO.TotalArcSize=88
       DataIO.TotalArcSize+=FD.Size;
   }
+ // printf("*************%d*************\n",DataIO.TotalArcSize);
 
   Cmd->ArcNames->Rewind();
+
   /*
-   do the main work
+   *
+   * ExtractArchive(Cmd)
+   * do the main work
+   *
    */
   //printf("test %s& %s&\n",ArcName,ArcNameW);
   //ArcName ere.rar		ArcNameW = NULL
@@ -113,6 +118,16 @@ EXTRACT_ARC_CODE CmdExtract::ExtractArchive(CommandData *Cmd)
 {
   Archive Arc(Cmd);
 
+  /*
+   * Arc.WOpen(ArcName,ArcNameW) get the file handle
+   * get it!!!
+   *
+   * file handle's data
+   * class File:Arc.hFile   (FileHandle hFile;)
+   * get the hFile, just the description of the file
+   *
+   * put files to the : static File *CreatedFiles[256];
+   */
   if (!Arc.WOpen(ArcName,ArcNameW))
   {
     ErrHandler.SetErrorCode(OPEN_ERROR);
@@ -124,7 +139,6 @@ EXTRACT_ARC_CODE CmdExtract::ExtractArchive(CommandData *Cmd)
   //********** Arc.IsArchive(true)给Arc.NewLhd.FileCRC赋值，if不进入,[delete]
   if (!Arc.IsArchive(true))
   {
-	  //printf("\n********************************^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 #ifndef GUI
     mprintf(St(MNotRAR),ArcName);
 #endif
@@ -205,14 +219,17 @@ EXTRACT_ARC_CODE CmdExtract::ExtractArchive(CommandData *Cmd)
   {
 	//printf("\ntest6******    %d	 %d\n",UINT32(DataIO.UnpFileCRC),UINT32(Arc.NewLhd.FileCRC^0xffffffff));
 	  //第一次Size=45    第二次Size=7(代表结束)
-	  //Arc.ReadHeader() 计算出DataIO.UnpFileCRC值，解压后到CRC校验码
-	//计算 HeaderCRC 值
+	 /*
+	  * Arc.ReadHeader() 计算出DataIO.UnpFileCRC值，解压后到CRC校验码
+	  * 计算 HeaderCRC 值,the original CRC
+	  *
+	  *ExtractCurrentFile()测试能不能提取解压文件，从压缩里面到第一个文件测试到最后一个文件
+	  *进入if中表示测试所有文件结束，Size=7  Repeat=false
+	  *ExtractCurrentFile() do the main work
+	  *
+	  */
     int Size=Arc.ReadHeader();
-    //printf("\ntest7******%d  %d	 %d\n",Size,UINT32(DataIO.UnpFileCRC),UINT32(Arc.NewLhd.FileCRC^0xffffffff));
     bool Repeat=false;
-    //ExtractCurrentFile()测试能不能提取解压文件，从压缩里面到第一个文件测试到最后一个文件
-	  //进入if中表示测试所有文件结束，Size=7  Repeat=false
-    /***********ExtractCurrentFile do the main work *************/
     if (!ExtractCurrentFile(Cmd,Arc,Size,Repeat))
     {
     	if (Repeat)
@@ -222,16 +239,13 @@ EXTRACT_ARC_CODE CmdExtract::ExtractArchive(CommandData *Cmd)
       else
         break;
     }
-    //printf("\ntest&&&&&\n");
   }
-  //printf("\ntest&&   &&&\n");
   return(EXTRACT_ARC_NEXT);
 }
 
 
 bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize,bool &Repeat)
 {
-	//printf("\ntest10******%d	%d	%d\n",Arc.OldFormat,UINT32(DataIO.UnpFileCRC),UINT32(Arc.NewLhd.FileCRC^0xffffffff));
   char Command=*Cmd->Command;
   if (HeaderSize<=0)
     if (DataIO.UnpVolume)
@@ -632,7 +646,7 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
 
     //printf("\n*******************^^^^^^^^^^&&&&&&&&&&&&&&&&&&&&\n%c\n",Command); command='T'
     if (!IsLink(Arc.NewLhd.FileAttr))
-      if (Arc.IsArcDir())
+      if (Arc.IsArcDir())	/*******into else {}************/
       {
         if (!ExtrFile || Command=='P' || Command=='E' || Cmd->ExclPath==EXCL_SKIPWHOLEPATH)
           return(true);
@@ -645,7 +659,7 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
         }
         TotalFileCount++;
 
-        //Test=1,打印test  ok
+        //Test=1,打印test  ok    none???
         if (Cmd->Test)
         {
 #ifndef GUI
@@ -707,6 +721,9 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
       }
       else
       {
+    	  //printf("\n*******************^^^^^^^^^^&&&&&&&&&&&&&&&&&&&&\n%d %d %c\n",Cmd->Test,ExtrFile,Command);
+    	  //Cmd->Test=1 && ExtrFile =1  command="T"
+    	  /************set the flag of the command 'T' 'X' 'P'**************/
         if (Cmd->Test && ExtrFile)
           TestMode=true;
 #if !defined(GUI) && !defined(SFX_MODULE)
@@ -811,7 +828,6 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
 #endif
 
       CurFile.SetAllowDelete(!Cmd->KeepBroken);
-
       bool LinkCreateMode=!Cmd->Test && !SkipSolid;
       if (ExtractLink(DataIO,Arc,DestFileName,DataIO.UnpFileCRC,LinkCreateMode))
       {
@@ -819,23 +835,31 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
       }
       else
       {
+    	/******get in the else************/
         if ((Arc.NewLhd.Flags & LHD_SPLIT_BEFORE)==0)
+        {
           if (Arc.NewLhd.Method==0x30)
             UnstoreFile(DataIO,Arc.NewLhd.FullUnpSize);
           else
           {
             Unp->SetDestSize(Arc.NewLhd.FullUnpSize);
-
-            //printf("\ntest12****	%d    %d\n",DataIO.UnpFileCRC,Arc.NewLhd.UnpVer);
-            //  Unp->DoUnpack()  函数计算确定DataIO.UnpFileCRC的值
+            //Arc.NewLhd.UnpVer=29
+            /***********************************************
+             *
+             * Unp->DoUnpack(); do the unpack work
+             * call function : Unpack::Unpack29()
+             * extract the contests of the whole file
+             * and count the CRC( DataIO.UnpFileCRC ) of the file
+             *
+             * ************************************************/
 #ifndef SFX_MODULE
             if (Arc.NewLhd.UnpVer<=15)
               Unp->DoUnpack(15,FileCount>1 && Arc.Solid);
             else
 #endif
               Unp->DoUnpack(Arc.NewLhd.UnpVer,Arc.NewLhd.Flags & LHD_SOLID);
-            //printf("\ntest13****	%d    %d\n",DataIO.UnpFileCRC,Arc.NewLhd.UnpVer);
           }
+        }
       }
 
       if (Arc.IsOpened())
@@ -844,10 +868,17 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
       bool BrokenFile=false;
       if (!SkipSolid)
       {
+    	/***************************************************************
+    	 *
+    	 * UINT32(Arc.NewLhd.FileCRC^0xffffffff) is the original CRC
+    	 * UINT32(DataIO.UnpFileCRC) is the counted CRC
+    	 * == judge if it is the right password of the encrypt file
+    	 *
+    	 ****************************************************************/
+    	//printf("\n^^^^^^^^^^^^^^^ %d	%x	%x %x\n",Arc.OldFormat,UINT32(DataIO.UnpFileCRC),UINT32(Arc.NewLhd.FileCRC),UINT32(Arc.NewLhd.FileCRC^0xffffffff));
         if (Arc.OldFormat && UINT32(DataIO.UnpFileCRC)==UINT32(Arc.NewLhd.FileCRC) ||
             !Arc.OldFormat && UINT32(DataIO.UnpFileCRC)==UINT32(Arc.NewLhd.FileCRC^0xffffffff))
         {
-      	  //printf("\ntest9******%d	%d	%d\n",Arc.OldFormat,UINT32(DataIO.UnpFileCRC),UINT32(Arc.NewLhd.FileCRC^0xffffffff));
 #ifndef GUI
           if (Command!='P' && Command!='I')
             mprintf("%s%s ",Cmd->DisablePercentage ? " ":"\b\b\b\b\b ",St(MOk));
@@ -855,7 +886,6 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
         }
         else
         {
-        	  //printf("\ntest10******\n");
           char *BadArcName=/*(Arc.NewLhd.Flags & LHD_SPLIT_BEFORE) ? NULL:*/Arc.FileName;
           if (Arc.NewLhd.Flags & LHD_PASSWORD)
           {
@@ -878,6 +908,12 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
         mprintf("\b\b\b\b\b     ");
 #endif
 
+
+      /*
+       *
+       * extract the file, don't need
+       *
+       */
       if (!TestMode && (Command=='X' || Command=='E') &&
           !IsLink(Arc.NewLhd.FileAttr))
       {

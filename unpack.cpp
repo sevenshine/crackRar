@@ -283,15 +283,21 @@ void Unpack::Unpack29(bool Solid)
       continue;
     }
 
+    /*
+     *
+     * Number<256, read a byte
+     * [*Window], extract the contests of file1,file2,.....from the cycle, while(true)
+     *
+     *
+     */
     int Number=DecodeNumber((struct Decode *)&LD);
 
-    printf("$$$$$%d\n",Number);
-
+    //printf("\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX%d\n",Number);
     if (Number<256)
     {
-    	printf("&&&&&%s %d\n",Window,UnpPtr);
+    	//printf("&&&&&%s %d\n",Window,UnpPtr);
       Window[UnpPtr++]=(byte)Number;
-      printf("&&&&&%s %d\n",Window,UnpPtr);
+      //printf("&&&&&%s %d\n",Window,UnpPtr);
       continue;
     }
     if (Number>=271)
@@ -353,11 +359,16 @@ void Unpack::Unpack29(bool Solid)
       CopyString(Length,Distance);
       continue;
     }
+
+    /*
+     *
+     * Number==256, judge if the end of the block?
+     * break the cycle
+     */
     if (Number==256)
     {
       if (!ReadEndOfBlock())
       {
-    	  printf("#####\n");
         break;
       }
         continue;
@@ -407,8 +418,9 @@ void Unpack::Unpack29(bool Solid)
       continue;
     }
   }
-  printf("     $$$$$$$\n");
+
   UnpWriteBuf();
+  //printf("\n*****XXXXXXXX*******\n");
 }
 
 

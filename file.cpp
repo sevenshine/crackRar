@@ -78,6 +78,9 @@ bool File::Open(const char *Name,const wchar *NameW,bool OpenShared,bool Update)
   int sflags=OpenShared ? SH_DENYNO:SH_DENYWR;
   int handle=sopen(Name,flags,sflags);
 #else
+  /*
+   * get file handle
+   */
   int handle=open(Name,flags);
 #ifdef LOCK_EX
 
@@ -92,6 +95,10 @@ bool File::Open(const char *Name,const wchar *NameW,bool OpenShared,bool Update)
   }
 #endif
 #endif
+
+  /*
+   * file handle's data
+   */
   hNewFile=handle==-1 ? BAD_HANDLE:fdopen(handle,Update ? UPDATEBINARY:READBINARY);
   if (hNewFile==BAD_HANDLE && errno==ENOENT)
     ErrorType=FILE_NOTFOUND;
@@ -102,6 +109,10 @@ bool File::Open(const char *Name,const wchar *NameW,bool OpenShared,bool Update)
   bool Success=hNewFile!=BAD_HANDLE;
   if (Success)
   {
+	  /*
+	   * file handle's data
+	   * FileHandle hFile; get the hFile, just the description of the file
+	   */
     hFile=hNewFile;
     if (NameW!=NULL)
       strcpyw(FileNameW,NameW);

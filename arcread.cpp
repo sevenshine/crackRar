@@ -113,7 +113,7 @@ int Archive::ReadHeader()
 
   NextBlockPos=CurBlockPos+ShortBlock.HeadSize;
 
-  printf("@@%d\n",ShortBlock.HeadType);
+  //printf("@@%d\n",ShortBlock.HeadType);
 
   switch(ShortBlock.HeadType)
   {
@@ -368,7 +368,7 @@ int Archive::ReadHeader()
   HeaderCRC=~Raw.GetCRC(false)&0xffff;
   CurHeaderType=ShortBlock.HeadType;
 
-  printf("%d @@ %d @@ %d\n",Decrypt,ShortBlock.HeadCRC,HeaderCRC);
+  //printf("%d @@ %d @@ %d\n",Decrypt,ShortBlock.HeadCRC,HeaderCRC);
   if (Decrypt)
   {
     NextBlockPos+=Raw.PaddedSize()+SALT_SIZE;

@@ -572,7 +572,7 @@ void CommandData::ProcessCommand()
     case 'T':
     case 'I':
       {
-    	  printf("\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+    	printf("\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
         CmdExtract Extract;
         Extract.DoExtract(this);
         printf("\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
